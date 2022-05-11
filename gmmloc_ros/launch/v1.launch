@@ -22,7 +22,7 @@
 
         <param name="vocabulary_path" value="$(find gmmloc_ros)/voc/ORBvoc.bin" />
         <param name="output_path" value="$(find gmmloc_ros)/expr/" />
-		<param name="data_path" value="/PATH/TO/EUROC/DATASET/$(arg seq)/mav0/" />
+		<param name="data_path" value="/home/wgq/datas/Euroc/V1_03_difficult/mav0/" />
 		<param name="gt_path" value="$(find gmmloc_ros)/data/gt_sync/$(arg seq).txt" />
 
 		<param name="online" value="$(arg online)" />

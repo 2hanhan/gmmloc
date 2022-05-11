@@ -78,6 +78,9 @@ wstool init . ./gmmloc/gmmloc_https.rosinstall
 wstool update
 ```
 
+上面的依赖安装不好使用，那个开源没提供`gmmloc_https.rosinstall`都是`.gmmloc_https.rosinstall`的隐藏文件，所以自己复制一份不是隐藏文件的形式。
+
+
 Compile with:
 ```
 catkin build gmmloc_ros
