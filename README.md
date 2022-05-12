@@ -1,3 +1,8 @@
+# 自己写点儿注释
+这两个玩意不是一模一样吗
+[/gmmloc/src/modules/localization_opt.cpp](/gmmloc/src/modules/localization_opt.cpp)
+[/gmmloc/gmmloc/src/modules/localization_gmm.cpp](/gmmloc/gmmloc/src/modules/localization_gmm.cpp)
+
 # GMMLoc
 
 [![Build Status](https://travis-ci.org/HyHuang1995/gmmloc.svg?branch=master)](https://travis-ci.org/github/HyHuang1995/gmmloc)
