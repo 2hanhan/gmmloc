@@ -6,167 +6,186 @@
 
 #include "../utils/nanoflann.hpp"
 
-namespace gmmloc {
+namespace gmmloc
+{
 
-using GaussianComponents = std::vector<GaussianComponent::Ptr>;
+  using GaussianComponents = std::vector<GaussianComponent::Ptr>;
 
-using GaussianComponents2d = std::vector<GaussianComponent2d::Ptr>;
+  using GaussianComponents2d = std::vector<GaussianComponent2d::Ptr>;
 
-struct FLANNPoints3d {
+  struct FLANNPoints3d
+  {
 
-  struct Point3 {
-    double x, y, z;
-  };
-  std::vector<Point3> pts;
-  inline FLANNPoints3d(const GaussianComponents &comp_) {
-    Point3 pt;
-    for (size_t i = 0; i < comp_.size(); i++) {
-      pt.x = comp_[i]->mean().x();
-      pt.y = comp_[i]->mean().y();
-      pt.z = comp_[i]->mean().z();
-      pts.push_back(pt);
+    struct Point3
+    {
+      double x, y, z;
+    };
+    std::vector<Point3> pts;
+    inline FLANNPoints3d(const GaussianComponents &comp_)
+    {
+      Point3 pt;
+      for (size_t i = 0; i < comp_.size(); i++)
+      {
+        pt.x = comp_[i]->mean().x();
+        pt.y = comp_[i]->mean().y();
+        pt.z = comp_[i]->mean().z();
+        pts.push_back(pt);
+      }
     }
-  }
 
-  inline size_t kdtree_get_point_count() const { return pts.size(); }
+    inline size_t kdtree_get_point_count() const { return pts.size(); }
 
-  inline double kdtree_distance(const double *p1, const size_t idx_p2,
-                                size_t /*size*/) const {
-    const double d0 = p1[0] - pts[idx_p2].x;
-    const double d1 = p1[1] - pts[idx_p2].y;
-    const double d2 = p1[2] - pts[idx_p2].z;
-    return d0 * d0 + d1 * d1 + d2 * d2;
-  }
-
-  inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
-    if (dim == 0)
-      return pts[idx].x;
-    else if (dim == 1)
-      return pts[idx].y;
-    else
-      return pts[idx].z;
-  }
-
-  template <class BBOX> bool kdtree_get_bbox(BBOX & /* bb */) const {
-    return false;
-  }
-};
-
-struct FLANNPoints2d {
-
-  struct Point2 {
-    double x, y;
-  };
-  std::vector<Point2> pts;
-  inline FLANNPoints2d(const GaussianComponents2d &comp_) {
-    Point2 pt;
-    for (size_t i = 0; i < comp_.size(); i++) {
-      pt.x = comp_[i]->mean().x();
-      pt.y = comp_[i]->mean().y();
-      pts.push_back(pt);
+    inline double kdtree_distance(const double *p1, const size_t idx_p2,
+                                  size_t /*size*/) const
+    {
+      const double d0 = p1[0] - pts[idx_p2].x;
+      const double d1 = p1[1] - pts[idx_p2].y;
+      const double d2 = p1[2] - pts[idx_p2].z;
+      return d0 * d0 + d1 * d1 + d2 * d2;
     }
-  }
 
-  inline size_t kdtree_get_point_count() const { return pts.size(); }
+    inline double kdtree_get_pt(const size_t idx, const size_t dim) const
+    {
+      if (dim == 0)
+        return pts[idx].x;
+      else if (dim == 1)
+        return pts[idx].y;
+      else
+        return pts[idx].z;
+    }
 
-  inline double kdtree_distance(const double *p1, const size_t idx_p2,
-                                size_t /*size*/) const {
-    const double d0 = p1[0] - pts[idx_p2].x;
-    const double d1 = p1[1] - pts[idx_p2].y;
-    return d0 * d0 + d1 * d1;
-  }
+    template <class BBOX>
+    bool kdtree_get_bbox(BBOX & /* bb */) const
+    {
+      return false;
+    }
+  };
 
-  inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
-    if (dim == 0)
-      return pts[idx].x;
-    // else if (dim == 1)
-    //   return pts[idx].y;
-    else
-      return pts[idx].y;
-  }
+  struct FLANNPoints2d
+  {
 
-  template <class BBOX> bool kdtree_get_bbox(BBOX & /* bb */) const {
-    return false;
-  }
-};
+    struct Point2
+    {
+      double x, y; // GMM，x,y的平均值
+    };
+    std::vector<Point2> pts; // 2DGMM均值对应的像素坐标
+    inline FLANNPoints2d(const GaussianComponents2d &comp_)
+    {
+      Point2 pt;
+      for (size_t i = 0; i < comp_.size(); i++)
+      {
+        pt.x = comp_[i]->mean().x();
+        pt.y = comp_[i]->mean().y();
+        pts.push_back(pt);
+      }
+    }
 
-using KDTreePoints2d = nanoflann::KDTreeSingleIndexAdaptor<
-    nanoflann::L2_Simple_Adaptor<double, FLANNPoints2d>, FLANNPoints2d, 2>;
-using KDTreePoints3d = nanoflann::KDTreeSingleIndexAdaptor<
-    nanoflann::L2_Simple_Adaptor<double, FLANNPoints3d>, FLANNPoints3d, 3>;
+    inline size_t kdtree_get_point_count() const { return pts.size(); }
 
-class GMM {
+    inline double kdtree_distance(const double *p1, const size_t idx_p2,
+                                  size_t /*size*/) const
+    {
+      const double d0 = p1[0] - pts[idx_p2].x;
+      const double d1 = p1[1] - pts[idx_p2].y;
+      return d0 * d0 + d1 * d1;
+    }
 
-public:
-  using Ptr = std::shared_ptr<GMM>;
+    inline double kdtree_get_pt(const size_t idx, const size_t dim) const
+    {
+      if (dim == 0)
+        return pts[idx].x;
+      // else if (dim == 1)
+      //   return pts[idx].y;
+      else
+        return pts[idx].y;
+    }
 
-  using ConstPtr = std::shared_ptr<const GMM>;
+    template <class BBOX>
+    bool kdtree_get_bbox(BBOX & /* bb */) const
+    {
+      return false;
+    }
+  };
 
-  // using Ptr = GMM *;
+  using KDTreePoints2d = nanoflann::KDTreeSingleIndexAdaptor<
+      nanoflann::L2_Simple_Adaptor<double, FLANNPoints2d>, FLANNPoints2d, 2>;
+  using KDTreePoints3d = nanoflann::KDTreeSingleIndexAdaptor<
+      nanoflann::L2_Simple_Adaptor<double, FLANNPoints3d>, FLANNPoints3d, 3>;
 
-  // using ConstPtr = const GMM *;
+  class GMM
+  {
 
-public:
-  explicit GMM(const GaussianComponents &components);
+  public:
+    using Ptr = std::shared_ptr<GMM>;
 
-  GMM(/* args */) = delete;
+    using ConstPtr = std::shared_ptr<const GMM>;
 
-  GMM(const GMM &other) = delete;
+    // using Ptr = GMM *;
 
-  void operator=(const GMM &) = delete;
+    // using ConstPtr = const GMM *;
 
-  ~GMM();
+  public:
+    explicit GMM(const GaussianComponents &components);
 
-  void renderViewProb(const Quaterniond &rot_c_w, const Vector3d &t_c_w);
+    GMM(/* args */) = delete;
 
-  void renderView(const Quaterniond &rot_c_w, const Vector3d &t_c_w);
+    GMM(const GMM &other) = delete;
 
-  void renderViewCovarianceCheck(const Quaterniond &rot_c_w,
-                                 const Vector3d &t_c_w);
+    void operator=(const GMM &) = delete;
 
-  void renderView(const Quaterniond &rot_c_w, const Vector3d &t_c_w,
-                  std::vector<uint32_t> indices, bool sort_by_depth = false);
+    ~GMM();
 
-  std::unique_ptr<KDTreePoints2d> genKDTree2d();
+    void renderViewProb(const Quaterniond &rot_c_w, const Vector3d &t_c_w);
 
-  void searchCorrespondence(const std::vector<Feature> &kpts,
-                            GaussianComponents2d &comps);
+    void renderView(const Quaterniond &rot_c_w, const Vector3d &t_c_w);
 
-  void searchCorrespondence(const std::vector<Feature> &kpts,
-                            std::vector<GaussianComponents2d> &comps,
-                            int num = 5);
+    void renderViewCovarianceCheck(const Quaterniond &rot_c_w,
+                                   const Vector3d &t_c_w);
 
-  void visualize2d(cv::Mat &viz_img) const;
+    void renderView(const Quaterniond &rot_c_w, const Vector3d &t_c_w,
+                    std::vector<uint32_t> indices, bool sort_by_depth = false);
 
-public:
-  // get set functions
-  void setCamera(PinholeCamera::Ptr cam) { camera_ = cam; }
+    std::unique_ptr<KDTreePoints2d> genKDTree2d();
 
-  const GaussianComponents &getComponents() const { return components_; }
+    void searchCorrespondence(const std::vector<Feature> &kpts,
+                              GaussianComponents2d &comps);
 
-  GaussianComponent::ConstPtr getComponent3d(size_t idx) const {
-    return components_[idx];
-  }
+    void searchCorrespondence(const std::vector<Feature> &kpts,
+                              std::vector<GaussianComponents2d> &comps,
+                              int num = 5);
 
-  const GaussianComponents2d &getComponents2d() const { return components2d_; }
+    void visualize2d(cv::Mat &viz_img) const;
 
-  size_t countComponents() { return components_.size(); }
+  public:
+    // get set functions
+    void setCamera(PinholeCamera::Ptr cam) { camera_ = cam; }
 
-private:
-  PinholeCamera::Ptr camera_ = nullptr;
+    const GaussianComponents &getComponents() const { return components_; }
 
-  uint32_t num_;
-  GaussianComponents components_;
+    GaussianComponent::ConstPtr getComponent3d(size_t idx) const
+    {
+      return components_[idx];
+    }
 
-  GaussianComponents2d components2d_;
+    const GaussianComponents2d &getComponents2d() const { return components2d_; }
 
-  KDTreePoints3d *kdtree3d_ = nullptr;
-  FLANNPoints3d *pts3d_ = nullptr;
+    size_t countComponents() { return components_.size(); }
 
-public:
-  void buildKDTree();
+  private:
+    PinholeCamera::Ptr camera_ = nullptr;
 
-  void queryPoint(const Eigen::Vector3d &pt, std::vector<int> &res);
-};
+    uint32_t num_;
+    GaussianComponents components_;
+
+    GaussianComponents2d components2d_; //投影到当前frame像素坐标下的2DGMM
+
+    KDTreePoints3d *kdtree3d_ = nullptr;
+    FLANNPoints3d *pts3d_ = nullptr;
+
+  public:
+    void buildKDTree();
+
+    void queryPoint(const Eigen::Vector3d &pt, std::vector<int> &res);
+  };
 
 } // namespace gmmloc

@@ -296,7 +296,7 @@ namespace gmmloc
   }
 
   /**
-   * @brief
+   * @brief 将先验的GMM投影到keyframe2D像素平面，并根据相机视野范围、遮挡情况进行GMM筛选
    *
    * @param rot_c_w 旋转向量
    * @param t_c_w 平移向量
@@ -315,6 +315,7 @@ namespace gmmloc
       /* code */
       auto &&mu = components_[idx]->mean(); // GAUSS的均值
 
+      // - 筛选在相机视野范围内的3DGMM
       //* 对应论文 III. METHOD D. Projection of the GMM Map 的计算相机视野的部分
       // STEP.0 check view cos
       bool check_view_cos = true;
@@ -345,6 +346,7 @@ namespace gmmloc
       if (g2d)
       {
         //  - 检测协方差是否符合阈值
+        //* 对应论文 III. METHOD D. Projection of the GMM Map 的GMM判断协方差阈值部分
         // STEP. check cov
         bool check_cov_2d = true;
         double cov_2d_thresh = 4.0;
@@ -364,7 +366,8 @@ namespace gmmloc
         // g2d->parent_ = components_[idx];
         g2d->proj_d_ = pc.z(); //更新深度
 
-        //  - 遍历所有的投影完成非GMM检测是否是最近投影，确定这档情况
+        //  - 遍历所有的投影完成非GMM,计算当前GMM与之前的GMM分布的距离，判定遮挡情况，取非遮挡的GMM投影
+        //* 对应论文 III. METHOD D. Projection of the GMM Map 的GMM遮挡部分
         // STEP. check near far
         bool check_depth = true;
         double depth_thresh = 0.8;
@@ -383,16 +386,18 @@ namespace gmmloc
             }
           }
           auto &min_ref = components2d_[min_idx];
-          if (min_dist < depth_thresh)
+          if (min_dist < depth_thresh) //如果GMM距离小于阈值则判定为发生遮挡
           {
-            if (g2d->proj_d_ < min_ref->proj_d_)
+            //保存距离相机最近的一个GMM，最近的没发生遮挡
+            if (g2d->proj_d_ < min_ref->proj_d_) //判断深度取最近点
             {
-              min_ref = g2d;
+              min_ref = g2d; // min_ref取[当前GMM][与当前GMM距离最近的GMM]中z深度最小的一个
+              //投影到2D的GMM，距离最近的就产生遮挡了，取z深度最小的就是取距离相机近的，不好遮挡
             }
           }
           else
           {
-            components2d_.push_back(g2d);
+            components2d_.push_back(g2d); //没有遮挡直接保存
           }
 
           // if (!replaced)
@@ -400,7 +405,7 @@ namespace gmmloc
         else
         {
           /* code */
-          components2d_.push_back(g2d);
+          components2d_.push_back(g2d); //第一个GMM一定没有遮挡也直接保存
         }
 
         // depth_.push_back(std::make_pair(g2d->proj_d_, g2d));
@@ -408,6 +413,7 @@ namespace gmmloc
     }
 
     //   if (sort_by_depth) {
+    //按照z深度对2D进行排序
     sort(components2d_.begin(), components2d_.end(),
          [](const GaussianComponent2d::Ptr &a, const GaussianComponent2d::Ptr &b)
              -> bool
@@ -544,6 +550,13 @@ namespace gmmloc
     }
   }
 
+  /**
+   * @brief 进行KDtree最近邻搜索先验地图的GMM与keyframe特征点进行数据关联
+   * ?为什么是构建GMM的tree，反过来效果怎么样啊
+   * @param kpts 当前keyframe中的特征点
+   * @param comps 2DGMM数据关联结果
+   * @param num 默认参数5
+   */
   void GMM::searchCorrespondence(const std::vector<Feature> &kpts,
                                  std::vector<GaussianComponents2d> &comps,
                                  int num)
@@ -554,9 +567,11 @@ namespace gmmloc
     comps.resize(kpts.size(), GaussianComponents2d());
 
     // build index
-    FLANNPoints2d pts(components2d_);
-    auto kdtree =
-        new KDTreePoints2d(2, pts, nanoflann::KDTreeSingleIndexAdaptorParams(5));
+    //构建GMM的kdtree索引
+    FLANNPoints2d pts(components2d_);                                               // 2DGMM像素坐标
+    auto kdtree = new KDTreePoints2d(2,                                             // 2维kdtree
+                                     pts,                                           //输入数据
+                                     nanoflann::KDTreeSingleIndexAdaptorParams(5)); //?叶子节点最大size
 
     kdtree->buildIndex();
 
@@ -564,7 +579,7 @@ namespace gmmloc
     const double mdist2_thresh = 9.0;
 
     // searching
-    const int num_results = num;
+    const int num_results = num; // kdtree搜索保存最好的结果数量
     for (size_t i = 0; i < kpts.size(); i++)
     {
 
@@ -575,8 +590,8 @@ namespace gmmloc
       std::vector<size_t> ret_index(num_results);
       std::vector<double> out_dist_sqr(num_results);
       // kdtree->knnSearch(pt_query, num_nearest, )
-      auto num_final = kdtree->knnSearch(&pt_query[0], num_results, &ret_index[0],
-                                         &out_dist_sqr[0]);
+      //最近邻搜索寻找特征点最近的GMM
+      auto num_final = kdtree->knnSearch(&pt_query[0], num_results, &ret_index[0], &out_dist_sqr[0]); //计算后符合要求的结果数量
 
       // In case of less points in the tree than requested:
       ret_index.resize(num_final);
@@ -584,12 +599,12 @@ namespace gmmloc
       comps[i].clear();
       if (num_final)
       {
-        for (auto &&idx : ret_index)
+        //遍历最近邻选出的所有GMM，将符合条件的特征点关联到GMM
+        for (auto &&idx : ret_index) //保存最近邻搜索的特征点
         {
-          if (check_mdist2)
+          if (check_mdist2) //是否检测2阶中心距阈值
           {
-            auto dist =
-                components2d_[idx]->MDist2(Eigen::Map<Vector2d>(pt_query));
+            auto dist = components2d_[idx]->MDist2(Eigen::Map<Vector2d>(pt_query));
             if (dist < mdist2_thresh)
             {
               comps[i].push_back(components2d_[idx]);

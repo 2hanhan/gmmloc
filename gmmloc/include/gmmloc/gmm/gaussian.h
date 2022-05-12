@@ -127,6 +127,12 @@ namespace gmmloc
 
     void decompose();
 
+    /**
+     * @brief 计算二阶中心距
+     *
+     * @param centre
+     * @return double
+     */
     double MDist2(Eigen::Vector2d centre)
     {
       Eigen::Vector2d delta = centre - mean_;

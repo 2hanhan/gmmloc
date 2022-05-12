@@ -168,12 +168,14 @@ namespace gmmloc
     Quaterniond rot_c_w = Tcw.rotation(); //旋转四元数
     Vector3d t_c_w = Tcw.translation();   //平移向量
 
+    // step 1 计算获取3DGMM先验地图在Keyframe的像素平面投影情况
     {
       timing::Timer t("loc/render_view");
       gmm_model_->renderView(rot_c_w, t_c_w);
       t.Stop();
     }
 
+    // step 2 计算先验地图的GMM与keyframe特征点进行数据关联
     LOG(INFO) << "searching correspondences";
     {
       timing::Timer t("map/search_corr");

@@ -29,17 +29,25 @@ namespace gmmloc
   };
 
   // TODO: dimensionality?
+  /**
+   * @brief 计算两个2DGMM分布的距离
+   * * 对应论文 III. METHOD A. Notations
+   * @tparam T
+   * @param g0 之前的GMM
+   * @param g1 当前的GMM
+   * @return double
+   */
   template <typename T>
   double GMMUtility::BHCoefficient(const T &g0, const T &g1)
   {
 
-    auto &&cov0 = g0.cov();
-    auto &&cov1 = g1.cov();
+    auto &&cov0 = g0.cov(); //之前的2DGMM
+    auto &&cov1 = g1.cov(); //当前的2DGMM
     // auto &&cov1_inv = g1.cov_inv();
 
-    auto cov = (cov0 + cov1) / 2.0;
+    auto cov = (cov0 + cov1) / 2.0; //协方差
 
-    auto &&mu0 = g0.mean();
+    auto &&mu0 = g0.mean(); //均值
     auto &&mu1 = g1.mean();
     decltype(mu0) delta = mu1 - mu0;
 

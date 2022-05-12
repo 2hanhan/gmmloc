@@ -1,7 +1,24 @@
 # 自己写点儿注释
-这两个玩意不是一模一样吗
-[/gmmloc/src/modules/localization_opt.cpp](/gmmloc/src/modules/localization_opt.cpp)
-[/gmmloc/gmmloc/src/modules/localization_gmm.cpp](/gmmloc/gmmloc/src/modules/localization_gmm.cpp)
+> 2022/5/12 
+
+## 与ORB-SLAM2的一些区别
+> 虽然代码相对ORB2改动比较大，但是整体还是能看出来是ORB-SLAM2的框架
+> - 线程方面是，取消了回环检测重定位的部分，`tracking`与`localmap`线程改为了`tracking`和`localtion`线程
+>     - `tracking`对应论文中的前端部分
+>     - `location`对应论文中的后端部分
+> - 添加了先验地图加载与keyframe的feature做数据关联，并加入优化中
+>   - 数据关联入口在设置frame为keyframe的部分
+>   - 优化项的添加主要在location中，本质上还都是些重投影误差 
+## 注释
+> 主要对照这作者的这篇论文加了些注释 H. Huang, H. Ye, Y. Sun and M. Liu, "GMMLoc: Structure Consistent Visual Localization With Gaussian Mixture Models," in IEEE Robotics and Automation Letters, vol. 5, no. 4, pp. 5043-5050, Oct. 2020, doi: 10.1109/LRA.2020.3005130.
+> 找到的部分用`// * 对应论文 xxxx `做了注释可以直接搜索
+- 优化项的构建
+- GMM的数据关联
+- ~~没找到其中【公式1】和之前的概率公式的实现部分，可能主要是概念呢吧~~
+## ~~吐槽~~
+~~下面这两个玩意不是一模一样吗?!~~
+- ~~[/gmmloc/src/modules/localization_opt.cpp](/gmmloc/src/modules/localization_opt.cpp)~~
+- ~~[/gmmloc/gmmloc/src/modules/localization_gmm.cpp](/gmmloc/gmmloc/src/modules/localization_gmm.cpp)~~
 
 # GMMLoc
 
