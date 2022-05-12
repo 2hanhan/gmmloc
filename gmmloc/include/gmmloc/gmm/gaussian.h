@@ -8,161 +8,169 @@
 
 #include "../cv/pinhole_camera.h"
 
-namespace gmmloc {
-constexpr int Dim = 3;
+namespace gmmloc
+{
+  constexpr int Dim = 3;
 
-class GaussianComponent {
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  class GaussianComponent
+  {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  using Ptr = GaussianComponent *;
-  using ConstPtr = const GaussianComponent *;
+    using Ptr = GaussianComponent *;
+    using ConstPtr = const GaussianComponent *;
 
-  struct NeighbourInfo {
-    double dist;
-    double idx;
-    Ptr ptr;
+    struct NeighbourInfo
+    {
+      double dist;
+      double idx;
+      Ptr ptr;
+    };
+
+    using Vec = Eigen::Matrix<double, Dim, 1>;
+    using Mat = Eigen::Matrix<double, Dim, Dim>;
+
+    GaussianComponent(const Vec &mean, const Mat &cov) : mean_(mean), cov_(cov)
+    {
+      cov_inv_ = cov_.inverse();
+
+      det_ = cov_.determinant();
+
+      det_sqrt_ = sqrt(det_);
+      det_sqrt_inv_ = 1.0 / det_sqrt_;
+
+      decompose();
+    }
+
+    ~GaussianComponent() = default;
+
+    void decompose();
+
+    double predict(const Vec &feature);
+
+    double predictLog(const Vec &feature);
+
+    double predictFull(const Vec &feature);
+
+    double chi2(const Vec &feature);
+
+    inline double MDist2(const Eigen::Vector3d &centre)
+    {
+      Eigen::Vector3d delta = centre - mean_;
+      return delta.transpose() * cov_inv_ * delta;
+    }
+
+    const Mat &cov() const { return cov_; }
+
+    const Mat &cov_inv() const { return cov_inv_; }
+
+    const Vec &mean() const { return mean_; }
+
+    const double &det() const { return det_; }
+
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const GaussianComponent &hh);
+
+  public:
+    std::vector<NeighbourInfo> nbs_;
+
+    Vec mean_;
+
+    Mat cov_, cov_inv_;
+
+    Matrix3d sqrt_info_;
+
+    Vec scale_;
+
+    Mat axis_;
+
+    Quaterniond rot_;
+
+    double det_;
+
+    double det_sqrt_;
+    double det_sqrt_inv_;
+
+    bool is_degenerated = false;
+    bool is_salient = false;
   };
 
-  using Vec = Eigen::Matrix<double, Dim, 1>;
-  using Mat = Eigen::Matrix<double, Dim, Dim>;
+  class GaussianComponent2d
+  {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  GaussianComponent(const Vec &mean, const Mat &cov) : mean_(mean), cov_(cov) {
-    cov_inv_ = cov_.inverse();
+    using Ptr = std::shared_ptr<GaussianComponent2d>;
 
-    det_ = cov_.determinant();
+    using ConstPtr = std::shared_ptr<const GaussianComponent2d>;
 
-    det_sqrt_ = sqrt(det_);
-    det_sqrt_inv_ = 1.0 / det_sqrt_;
+    GaussianComponent2d() = delete;
 
-    decompose();
-  }
+    GaussianComponent2d(const GaussianComponent2d &g) = delete;
 
-  ~GaussianComponent() = default;
+    GaussianComponent2d &operator=(const GaussianComponent2d &g) = delete;
 
-  void decompose();
+    GaussianComponent2d(const Vector2d &mean, const Matrix2d &cov)
+        : mean_(mean), cov_(cov)
+    {
+      cov_inv_ = cov_.inverse();
 
-  double predict(const Vec &feature);
+      det_ = cov_.determinant();
 
-  double predictLog(const Vec &feature);
+      det_sqrt_ = sqrt(det_);
+      det_sqrt_inv_ = 1.0 / det_sqrt_;
 
-  double predictFull(const Vec &feature);
+      decompose();
+    }
 
-  double chi2(const Vec &feature);
+    ~GaussianComponent2d() = default;
 
-  inline double MDist2(const Eigen::Vector3d &centre) {
-    Eigen::Vector3d delta = centre - mean_;
-    return delta.transpose() * cov_inv_ * delta;
-  }
+    void decompose();
 
-  const Mat &cov() const { return cov_; }
+    double MDist2(Eigen::Vector2d centre)
+    {
+      Eigen::Vector2d delta = centre - mean_;
+      return delta.transpose() * cov_inv_ * delta;
+    }
 
-  const Mat &cov_inv() const { return cov_inv_; }
+    const Matrix2d &cov() const { return cov_; }
 
-  const Vec &mean() const { return mean_; }
+    const Matrix2d &cov_inv() const { return cov_inv_; }
 
-  const double &det() const { return det_; }
+    const Vector2d &mean() const { return mean_; }
 
-  friend std::ostream &operator<<(std::ostream &os,
-                                  const GaussianComponent &hh);
+    const Vector2d &scale() const { return scale_; }
 
-public:
-  std::vector<NeighbourInfo> nbs_;
+    const double &theta() const { return theta_; }
 
-  Vec mean_;
+    const double &det() const { return det_; }
 
-  Mat cov_, cov_inv_;
+  public:
+    uint32_t id_ = 0; // ID
 
-  Matrix3d sqrt_info_;
+    GaussianComponent *parent_ = nullptr; //对应的3D的GMM
 
-  Vec scale_;
+    double proj_d_ = 0.0; //投影的GMM对应的深度
 
-  Mat axis_;
+    Vector2d mean_;
 
-  Quaterniond rot_;
+    Matrix2d cov_, cov_inv_;
 
-  double det_;
+    Vector2d scale_;
 
-  double det_sqrt_;
-  double det_sqrt_inv_;
+    Matrix2d axis_;
 
-  bool is_degenerated = false;
-  bool is_salient = false;
-};
+    // Quaterniond rot_;
+    double theta_;
 
-class GaussianComponent2d {
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    double det_;
 
-  using Ptr = std::shared_ptr<GaussianComponent2d>;
+    double det_sqrt_;
+    double det_sqrt_inv_;
+  };
 
-  using ConstPtr = std::shared_ptr<const GaussianComponent2d>;
-
-  GaussianComponent2d() = delete;
-
-  GaussianComponent2d(const GaussianComponent2d &g) = delete;
-
-  GaussianComponent2d &operator=(const GaussianComponent2d &g) = delete;
-
-  GaussianComponent2d(const Vector2d &mean, const Matrix2d &cov)
-      : mean_(mean), cov_(cov) {
-    cov_inv_ = cov_.inverse();
-
-    det_ = cov_.determinant();
-
-    det_sqrt_ = sqrt(det_);
-    det_sqrt_inv_ = 1.0 / det_sqrt_;
-
-    decompose();
-  }
-
-  ~GaussianComponent2d() = default;
-
-  void decompose();
-
-  double MDist2(Eigen::Vector2d centre) {
-    Eigen::Vector2d delta = centre - mean_;
-    return delta.transpose() * cov_inv_ * delta;
-  }
-
-  const Matrix2d &cov() const { return cov_; }
-
-  const Matrix2d &cov_inv() const { return cov_inv_; }
-
-  const Vector2d &mean() const { return mean_; }
-
-  const Vector2d &scale() const { return scale_; }
-
-  const double &theta() const { return theta_; }
-
-  const double &det() const { return det_; }
-
-public:
-  uint32_t id_ = 0;
-
-  GaussianComponent *parent_ = nullptr;
-
-  double proj_d_ = 0.0;
-
-  Vector2d mean_;
-
-  Matrix2d cov_, cov_inv_;
-
-  Vector2d scale_;
-
-  Matrix2d axis_;
-
-  // Quaterniond rot_;
-  double theta_;
-
-  double det_;
-
-  double det_sqrt_;
-  double det_sqrt_inv_;
-};
-
-// TODO: wrapper for dynamic memory allocation
-using GaussianMixture = std::vector<GaussianComponent::Ptr>;
+  // TODO: wrapper for dynamic memory allocation
+  using GaussianMixture = std::vector<GaussianComponent::Ptr>;
 
 } // namespace gmmloc
 

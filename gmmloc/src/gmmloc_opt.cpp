@@ -27,6 +27,16 @@
 namespace gmmloc
 {
 
+  /**
+   * @brief 将frame处理为keyframe
+   * 将frame设置为keyframe，更新参考keyframe
+   * 提取ORB词袋
+   * 与先验地图进行数据关联
+   * 提取新的MapPoints
+   * @param frame
+   * @param is_first
+   * @return KeyFrame*
+   */
   KeyFrame *GMMLoc::processKeyFrame(Frame *frame, bool is_first)
   {
     LOG(INFO) << "process new keyframe";
@@ -45,6 +55,13 @@ namespace gmmloc
     return kf_ptr;
   }
 
+  /**
+   * @brief 提取新的MapPoint
+   *
+   * @param frame
+   * @param kf_ptr
+   * @param check_depth
+   */
   void GMMLoc::createMapPointsFromStereo(Frame *frame, KeyFrame *kf_ptr,
                                          bool check_depth)
   {
@@ -138,13 +155,18 @@ namespace gmmloc
     }
   }
 
+  /**
+   * @brief 构建keyframe与先验地图的数据关联
+   *
+   * @param kf keyframe
+   */
   void GMMLoc::associateMapElements(KeyFrame *kf)
   {
     CHECK_NOTNULL(gmm_model_);
 
-    auto Tcw = kf->getTcw();
-    Quaterniond rot_c_w = Tcw.rotation();
-    Vector3d t_c_w = Tcw.translation();
+    auto Tcw = kf->getTcw();              //当前keyframe位姿
+    Quaterniond rot_c_w = Tcw.rotation(); //旋转四元数
+    Vector3d t_c_w = Tcw.translation();   //平移向量
 
     {
       timing::Timer t("loc/render_view");
