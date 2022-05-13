@@ -1,5 +1,8 @@
 # 自己写点儿注释
 > 2022/5/12 
+```bash
+roslaunch gmmloc_ros v1.launch seq:=V1_03_difficult
+```
 
 ## 与ORB-SLAM2的一些区别
 > 虽然代码相对ORB2改动比较大，但是整体还是能看出来是ORB-SLAM2的框架
