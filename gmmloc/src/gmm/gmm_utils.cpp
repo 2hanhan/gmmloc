@@ -150,8 +150,8 @@ namespace gmmloc
 
     Eigen::Vector3d mu3d_cam = rot_c_w * mu3d + t_c_w; //投影到keyframe坐标系下GMM均值
 
-    Eigen::Vector2d mu2d;
-    Eigen::Matrix<double, 2, 3> jacob_proj;
+    Eigen::Vector2d mu2d;                                        // 2D像素均值
+    Eigen::Matrix<double, 2, 3> jacob_proj;                      //雅克比的投影矩阵
     auto res_proj = cam->project3(mu3d_cam, &mu2d, &jacob_proj); // keyframe坐标系下GMM均值的3D坐标与对应的2D像素坐标
 
     if (res_proj.getDetailedStatus() != ProjectionResult::Status::KEYPOINT_VISIBLE) //判断投影完成后的可观测状态

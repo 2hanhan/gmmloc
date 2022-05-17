@@ -328,7 +328,7 @@ namespace gmmloc
 
         const Vector3d po = (mu - t_w_c).normalized(); //从相机指向GMM均值的向量的单位化
 
-        auto &&axis = components_[idx]->axis_.col(0); // GMM投影退化方向的轴，就是相机光轴方向被，毕竟后面是投影到keyframe的2D平面
+        auto &&axis = components_[idx]->axis_.col(0); // GMM投影退化方向的轴，理解成使用GMM退化轴做观测方向，能否看到相机光心。与其说是判断是否在相机视野范围内，不如说是判断在相机使用范围内的GMM投影是否退化严重
 
         view_cos = abs(po.dot(axis)); //计算相机的视场角的cos值
 
