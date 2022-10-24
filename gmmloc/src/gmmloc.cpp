@@ -325,6 +325,7 @@ namespace gmmloc
       // initial pose
       if (data->idx == 0)
       {
+        // - 第0帧的时候使用GT初始化位姿
         Eigen::Quaterniond rot_c_w = data->rot_w_c.conjugate();
         Eigen::Vector3d trans_c_w = -(rot_c_w * data->t_w_c);
 
@@ -332,11 +333,12 @@ namespace gmmloc
       }
       else if (data->idx == 1)
       {
+        // - 第1帧接受之前设置的GT位姿
         init_pose = curr_frame_->getTcw();
       }
       else
       {
-
+        // - 初始化位姿为两张keyfrane之间的变换量
         SE3Quat delta = curr_frame_->getTcw() * last_frame_->getTwc();
         init_pose = delta * curr_frame_->getTcw();
       }

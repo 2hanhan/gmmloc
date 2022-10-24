@@ -127,7 +127,7 @@ namespace gmmloc
           {
 
             timing::Timer timer_ba("loc/ba");
-            jointOptimization(curr_kf_, &flag_abort_ba_, map_);
+            jointOptimization(curr_kf_, &flag_abort_ba_, map_); // localBA入口函数
             timer_ba.Stop();
           }
         }
